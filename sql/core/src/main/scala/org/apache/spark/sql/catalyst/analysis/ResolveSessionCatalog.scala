@@ -65,9 +65,15 @@ class ResolveSessionCatalog(val catalogManager: CatalogManager)
     case ReplaceColumns(ResolvedV1TableIdentifier(ident), _) =>
       throw QueryCompilationErrors.unsupportedTableOperationError(ident, "REPLACE COLUMNS")
 
-    case a @ AlterColumn(ResolvedTable(catalog, ident, table: V1Table, _), _, _, _, _, _, _)
+    case AlterColumns(ResolvedTable(catalog, ident, table: V1Table, _), columns, specs)
         if supportsV1Command(catalog) =>
-      if (a.column.name.length > 1) {
+      if (columns.size > 1) {
+        throw QueryCompilationErrors.unsupportedTableOperationError(
+          catalog, ident, "ALTER COLUMN in bulk")
+      }
+      val column = columns.head
+      val a = specs.head
+      if (column.name.length > 1) {
         throw QueryCompilationErrors.unsupportedTableOperationError(
           catalog, ident, "ALTER COLUMN with qualified column")
       }
@@ -81,7 +87,7 @@ class ResolveSessionCatalog(val catalogManager: CatalogManager)
       val builder = new MetadataBuilder
       // Add comment to metadata
       a.comment.map(c => builder.putString("comment", c))
-      val colName = a.column.name(0)
+      val colName = column.name.head
       val dataType = a.dataType.getOrElse {
         table.schema.findNestedField(Seq(colName), resolver = conf.resolver)
           .map {

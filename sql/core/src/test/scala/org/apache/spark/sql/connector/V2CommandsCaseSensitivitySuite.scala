@@ -18,7 +18,7 @@
 package org.apache.spark.sql.connector
 
 import org.apache.spark.sql.catalyst.analysis.{AnalysisTest, CreateTablePartitioningValidationSuite, ResolvedTable, TestRelation2, TestTable2, UnresolvedFieldName, UnresolvedFieldPosition, UnresolvedIdentifier}
-import org.apache.spark.sql.catalyst.plans.logical.{AddColumns, AlterColumn, AlterTableCommand, CreateTableAsSelect, DropColumns, LogicalPlan, OptionList, QualifiedColType, RenameColumn, ReplaceColumns, ReplaceTableAsSelect, UnresolvedTableSpec}
+import org.apache.spark.sql.catalyst.plans.logical.{AddColumns, AlterColumns, AlterColumnSpec, AlterTableCommand, CreateTableAsSelect, DropColumns, LogicalPlan, OptionList, QualifiedColType, RenameColumn, ReplaceColumns, ReplaceTableAsSelect, UnresolvedTableSpec}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.types.DataTypeUtils.toAttributes
 import org.apache.spark.sql.connector.catalog.Identifier
@@ -355,7 +355,8 @@ class V2CommandsCaseSensitivitySuite
   test("AlterTable: drop column nullability resolution") {
     Seq(Array("ID"), Array("point", "X"), Array("POINT", "X"), Array("POINT", "x")).foreach { ref =>
       alterTableTest(
-        AlterColumn(table, UnresolvedFieldName(ref), None, Some(true), None, None, None),
+        AlterColumns(table, Seq(UnresolvedFieldName(ref)),
+          Seq(AlterColumnSpec(None, Some(true), None, None, None))),
         Seq("Missing field " + ref.quoted)
       )
     }
@@ -364,7 +365,8 @@ class V2CommandsCaseSensitivitySuite
   test("AlterTable: change column type resolution") {
     Seq(Array("ID"), Array("point", "X"), Array("POINT", "X"), Array("POINT", "x")).foreach { ref =>
       alterTableTest(
-        AlterColumn(table, UnresolvedFieldName(ref), Some(StringType), None, None, None, None),
+        AlterColumns(table, Seq(UnresolvedFieldName(ref)),
+          Seq(AlterColumnSpec(Some(StringType), None, None, None, None))),
         Seq("Missing field " + ref.quoted)
       )
     }
@@ -373,7 +375,8 @@ class V2CommandsCaseSensitivitySuite
   test("AlterTable: change column comment resolution") {
     Seq(Array("ID"), Array("point", "X"), Array("POINT", "X"), Array("POINT", "x")).foreach { ref =>
       alterTableTest(
-        AlterColumn(table, UnresolvedFieldName(ref), None, None, Some("comment"), None, None),
+        AlterColumns(table, Seq(UnresolvedFieldName(ref)),
+          Seq(AlterColumnSpec(None, None, Some("comment"), None, None))),
         Seq("Missing field " + ref.quoted)
       )
     }
